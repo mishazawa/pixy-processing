@@ -4,6 +4,8 @@ Evolutionary shaders in Processing from 2017.
 
 Pixy is an application which uses a genetic algorithm to generate imagery and animation under the guidance of a user.
 
+![Pixy screenshot — a grid of generated samples with the selection and animation controls](screenshot.png)
+
 [Gallery on Behance](https://www.behance.net/gallery/69729037/Pixy)
 
 ## How it works
