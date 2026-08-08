@@ -200,6 +200,14 @@ public class Pixi {
     popRow = n;
     popSize = n * n;
     pop.setPopSize(n);
+
+    if (focusedId >= popSize) {
+      focusedId = popSize - 1;
+      isFocused = false;
+    }
+    if (lastSel >= popSize) {
+      lastSel = -1;
+    }
   }
 
   void randomPop() {
