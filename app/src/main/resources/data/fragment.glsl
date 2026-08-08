@@ -13,7 +13,11 @@ uniform float u_hoff;
 uniform float u_args[512];
 
 
-vec3 precol[64];
+// u_aa (AA quality) goes up to 16 (see Pixi.actionAAp), so the sample grid can
+// be up to 16*16=256 -- 64 only covers up to AA=8. Undersizing this wraps the
+// precol[iter] index modulo its length on most drivers, silently overwriting
+// and re-summing earlier samples in a periodic, repeating pattern.
+vec3 precol[256];
 uniform int u_aa;
 int iterX = 0;
 int iterY = 0;
@@ -102,35 +106,42 @@ vec3 g_sqrt(vec3 a) {
 	return temp;
 }
 
+// pow(x,y) is undefined (NaN) in GLSL whenever x<0 with a non-integer exponent,
+// and these gene values are frequently negative -- NaN then poisons every
+// downstream add/mult/comparison, producing solid saturated-color blocks
+// instead of a gradient. abs() the base too, and clamp the exponent so large
+// bases don't blow up to Infinity either.
 vec3 g_powOf(vec3 a, vec3 b) {
 	vec3 temp;
-	temp.x = pow(a.x, abs(b.x));
-	temp.y = pow(a.y, abs(b.y));
-	temp.z = pow(a.z, abs(b.z));
+	temp.x = clamp(pow(abs(a.x), clamp(abs(b.x), 0.0, 8.0)), -1000.0, 1000.0);
+	temp.y = clamp(pow(abs(a.y), clamp(abs(b.y), 0.0, 8.0)), -1000.0, 1000.0);
+	temp.z = clamp(pow(abs(a.z), clamp(abs(b.z), 0.0, 8.0)), -1000.0, 1000.0);
 	return temp;
 }
 
+// log(b.x) hits zero whenever b.x crosses 1, spiking the division just like
+// tan's asymptotes above; reuse the same bounded safe-divide.
 vec3 g_logOf(vec3 a, vec3 b) {
 	vec3 temp;
-	temp.x = log(a.x)/log(b.x);
-	temp.y = log(a.y)/log(b.y);
-	temp.z = log(a.z)/log(b.z);
+	temp.x = g_safeDiv(log(a.x), log(b.x));
+	temp.y = g_safeDiv(log(a.y), log(b.y));
+	temp.z = g_safeDiv(log(a.z), log(b.z));
 	return temp;
 }
 
 vec3 g_2pow(vec3 a) {
 	vec3 temp;
-	temp.x = pow(2.0, a.x);
-	temp.y = pow(2.0, a.y);
-	temp.z = pow(2.0, a.z);
+	temp.x = pow(2.0, clamp(a.x, -8.0, 8.0));
+	temp.y = pow(2.0, clamp(a.y, -8.0, 8.0));
+	temp.z = pow(2.0, clamp(a.z, -8.0, 8.0));
 	return temp;
 }
 
 vec3 g_2log(vec3 a) {
 	vec3 temp;
-	temp.x = log(2.0)/log(a.x);
-	temp.y = log(2.0)/log(a.y);
-	temp.z = log(2.0)/log(a.z);
+	temp.x = g_safeDiv(log(2.0), log(a.x));
+	temp.y = g_safeDiv(log(2.0), log(a.y));
+	temp.z = g_safeDiv(log(2.0), log(a.z));
 	return temp;
 }
 
@@ -194,11 +205,15 @@ vec3 g_cos(vec3 a) {
 	return temp;
 }
 
+// tan(x*PI) has a vertical asymptote every half-integer of x. Since g_x()/g_y()
+// sweep linearly across the screen, that repeats periodically across the whole
+// image (a grid of hard-clipped stripes, crossing into a "cross" wherever an
+// x-asymptote and a y-asymptote line up) instead of a single singularity.
 vec3 g_tan(vec3 a) {
 	vec3 temp;
-	temp.x = tan(a.x*M_PI);
-	temp.y = tan(a.y*M_PI);
-	temp.z = tan(a.z*M_PI);
+	temp.x = clamp(tan(a.x*M_PI), -8.0, 8.0);
+	temp.y = clamp(tan(a.y*M_PI), -8.0, 8.0);
+	temp.z = clamp(tan(a.z*M_PI), -8.0, 8.0);
 	return temp;
 }
 

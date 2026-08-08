@@ -71,6 +71,8 @@ class Artwork {
   }
 
   void setShader() {
+    System.out.println("id=" + id + " g_offset=" + g_offset + " g_scale=" + g_scale
+        + " offset=" + dna.offset + " scale=" + dna.scale + " x=" + x + " y=" + y + " w=" + w + " h=" + h);
     shader.set("u_g_off", g_offset.x, g_offset.y);
     shader.set("u_g_scale", g_scale);
     shader.set("u_off", dna.offset.x, dna.offset.y);
