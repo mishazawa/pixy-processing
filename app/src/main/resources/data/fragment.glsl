@@ -461,10 +461,21 @@ vec3 g_noise2(vec3 a, vec3 b) {
 
 // ---------------
 
+// TONE MAPPING
+
+// Reinhard tone mapping: compresses unbounded HDR-ish values from the gene
+// tree into [0,1] with a soft rolloff instead of the GPU hard-clipping them
+// when writing to the 8-bit framebuffer.
+vec3 g_tonemap(vec3 c) {
+	return c / (vec3(1.0) + c);
+}
+
 // PROCESSING
 
 vec3 process(vec3 c) {
-	return g_offsetH(c, vec3(u_hoff,u_hoff,u_hoff));
+	c = g_offsetH(c, vec3(u_hoff,u_hoff,u_hoff));
+	c = g_tonemap(c);
+	return c;
 }
 
 void main() {
