@@ -223,8 +223,21 @@ public class Pixi {
       displayGridView();
   }
 
+  // Grid cells are always square (gridScale.x == gridScale.y), which is the
+  // only place the g_scale/g_offset math in Artwork.update() was originally
+  // exercised with w == h. Single/side previews pass whatever rectangular box
+  // the panel happens to be, giving them a different crop/aspect of the same
+  // DNA. Route every non-grid display through this so they all crop to a
+  // centered square matching the grid's aspect instead.
+  void displaySquare(int id, float x, float y, float w, float h) {
+    float side = Math.min(w, h);
+    float sx = x + (w - side) / 2;
+    float sy = y + (h - side) / 2;
+    pop.display(id, sx, sy, side, side);
+  }
+
   void displaySingleView() {
-    pop.display(focusedId, 0, 0, displaySize.x, displaySize.y);
+    displaySquare(focusedId, 0, 0, displaySize.x, displaySize.y);
   }
 
   void displayGridView() {
@@ -330,7 +343,7 @@ public class Pixi {
 
     } else if (isFocused) {
       float previewH = uiSize.y - uiblock * 23;
-      pop.display(focusedId, uiPos.x, uiPos.y, uiSize.x, previewH);
+      displaySquare(focusedId, uiPos.x, uiPos.y, uiSize.x, previewH);
       sk.pushStyle();
       sk.stroke(grayNormal);
       sk.noFill();
@@ -338,7 +351,7 @@ public class Pixi {
       sk.popStyle();
     } else if (lastSel != -1) {
       float previewH = uiSize.y - uiblock * 23;
-      pop.display(lastSel, uiPos.x, uiPos.y, uiSize.x, previewH);
+      displaySquare(lastSel, uiPos.x, uiPos.y, uiSize.x, previewH);
       sk.pushStyle();
       sk.stroke(grayNormal);
       sk.noFill();
@@ -584,6 +597,14 @@ public class Pixi {
 
     if (key == processing.core.PConstants.BACKSPACE) {
       view = "GRID";
+    }
+
+    if (key == processing.core.PConstants.ESC) {
+      view = "GRID";
+      // Consume it so Sketch's key field no longer reads ESC -- Processing's
+      // surface-level key handling checks that field after keyPressed()
+      // returns and quits the app on ESC unless it's been cleared here.
+      sk.key = 0;
     }
 
     if (key == 's') {

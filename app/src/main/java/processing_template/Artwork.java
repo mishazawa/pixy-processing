@@ -71,8 +71,6 @@ class Artwork {
   }
 
   void setShader() {
-    System.out.println("id=" + id + " g_offset=" + g_offset + " g_scale=" + g_scale
-        + " offset=" + dna.offset + " scale=" + dna.scale + " x=" + x + " y=" + y + " w=" + w + " h=" + h);
     shader.set("u_g_off", g_offset.x, g_offset.y);
     shader.set("u_g_scale", g_scale);
     shader.set("u_off", dna.offset.x, dna.offset.y);
@@ -112,8 +110,13 @@ class Artwork {
 
   // CONTROLS
 
+  // Zooming has no natural limit ('a'/'z' just keep multiplying scale), so
+  // repeated zoom-in lets dna.scale run up into the hundreds. That inflates
+  // g_x()/g_y()'s per-pixel step so far that periodic genes (tan/sin/mod)
+  // cycle hundreds of times across the canvas -- dense aliased stripes, which
+  // is what looked like a repeating "cross". Clamp to a sane zoom range.
   void addScale(float amount) {
-    dna.scale *= amount;
+    dna.scale = Math.max(0.05f, Math.min(50f, dna.scale * amount));
     dna.offset.div(amount);
   }
 
