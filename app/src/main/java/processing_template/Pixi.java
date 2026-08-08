@@ -1,8 +1,14 @@
 package processing_template;
 
-public class Pixi {
+import controlP5.*;
 
-  public void run() {
+public class Pixi {
+  ControlP5 cp5time;
+  ControlP5 cp5gen;
+  ControlP5 cp5main;
+  ControlP5 cp5back;
+
+  public void run(Sketch sketchRef) {
   }
 
   public void mousePressed() {

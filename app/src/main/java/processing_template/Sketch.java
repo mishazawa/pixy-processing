@@ -1,7 +1,5 @@
 package processing_template;
 
-import java.nio.file.Path;
-
 import processing.core.PApplet;
 import processing.core.PGraphics;
 import processing.core.PImage;
@@ -53,7 +51,7 @@ public class Sketch extends PApplet {
   public void draw() {
     background(17);
 
-    app.run();
+    app.run(this);
 
   }
 

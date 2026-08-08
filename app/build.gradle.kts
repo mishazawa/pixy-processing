@@ -26,6 +26,7 @@ dependencies {
     implementation(libs.guava)
     // Core Processing
     implementation("org.processing:core:4.3.1")
+    implementation(files("libs/controlP5.jar"))
 
     // Standard Java JogAmp Libraries
     implementation("org.jogamp.gluegen:gluegen-rt:2.5.0")
