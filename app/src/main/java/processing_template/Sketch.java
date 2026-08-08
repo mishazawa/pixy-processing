@@ -21,7 +21,7 @@ public class Sketch extends PApplet {
   @Override
   public void settings() {
     size(1280, 720, P2D);
-    pixelDensity(1);
+    pixelDensity(displayDensity());
     PJOGL.setIcon("data/logo.png");
   }
 
@@ -44,6 +44,7 @@ public class Sketch extends PApplet {
     renderer = createGraphics(800, 800, P2D);
 
     this.app = new Pixi();
+    app.init(this);
 
   }
 
@@ -51,8 +52,12 @@ public class Sketch extends PApplet {
   public void draw() {
     background(17);
 
-    app.run(this);
+    app.run();
 
+  }
+
+  public void controlEvent(controlP5.ControlEvent theEvent) {
+    app.controlEvent(theEvent);
   }
 
   @Override
