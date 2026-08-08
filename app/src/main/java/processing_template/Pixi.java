@@ -321,18 +321,20 @@ public class Pixi {
       sk.popStyle();
 
     } else if (isFocused) {
-      pop.display(focusedId, uiPos.x, uiPos.y, uiSize.x, uiPos.y + uiSize.y - uiblock * 23);
+      float previewH = uiSize.y - uiblock * 23;
+      pop.display(focusedId, uiPos.x, uiPos.y, uiSize.x, previewH);
       sk.pushStyle();
       sk.stroke(grayNormal);
       sk.noFill();
-      sk.rect(uiPos.x, uiPos.y, uiSize.x, uiPos.y + uiSize.y - uiblock * 23);
+      sk.rect(uiPos.x, uiPos.y, uiSize.x, previewH);
       sk.popStyle();
     } else if (lastSel != -1) {
-      pop.display(lastSel, uiPos.x, uiPos.y, uiSize.x, uiPos.y + uiSize.y - uiblock * 23);
+      float previewH = uiSize.y - uiblock * 23;
+      pop.display(lastSel, uiPos.x, uiPos.y, uiSize.x, previewH);
       sk.pushStyle();
       sk.stroke(grayNormal);
       sk.noFill();
-      sk.rect(uiPos.x, uiPos.y, uiSize.x, uiPos.y + uiSize.y - uiblock * 23);
+      sk.rect(uiPos.x, uiPos.y, uiSize.x, previewH);
       sk.popStyle();
     } else {
       sk.pushStyle();
