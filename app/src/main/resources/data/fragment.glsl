@@ -66,11 +66,21 @@ vec3 g_mult(vec3 a, vec3 b) {
 	return temp;
 }
 
+// g_x()/g_y() sweep through zero across the canvas, so a plain a/b here spikes
+// toward +-infinity right at that seam and gets hard-clipped into a flat,
+// "clamped"-looking band. Bound the result directly so the singularity turns
+// into a steep-but-finite ramp instead.
+float g_safeDiv(float a, float b) {
+	float sb = b >= 0.0 ? 1.0 : -1.0;
+	float bd = abs(b) < 0.05 ? sb * 0.05 : b;
+	return clamp(a / bd, -8.0, 8.0);
+}
+
 vec3 g_div(vec3 a, vec3 b) {
 	vec3 temp;
-	temp.x = a.x / b.x;
-	temp.y = a.y / b.y;
-	temp.z = a.z / b.z;
+	temp.x = g_safeDiv(a.x, b.x);
+	temp.y = g_safeDiv(a.y, b.y);
+	temp.z = g_safeDiv(a.z, b.z);
 	return temp;
 }
 
@@ -463,11 +473,12 @@ vec3 g_noise2(vec3 a, vec3 b) {
 
 // TONE MAPPING
 
-// Reinhard tone mapping: compresses unbounded HDR-ish values from the gene
-// tree into [0,1] with a soft rolloff instead of the GPU hard-clipping them
-// when writing to the 8-bit framebuffer.
+// Soft-clip: identity for values already inside [-1,1], only compresses the
+// parts of the signal that overflow that range (asymptoting toward +-1)
+// instead of the GPU hard-clipping them when writing to the 8-bit framebuffer.
+// Unlike Reinhard (c / (1+c)) this leaves in-range colors untouched.
 vec3 g_tonemap(vec3 c) {
-	return c / (vec3(1.0) + c);
+	return c / max(vec3(1.0), abs(c));
 }
 
 // PROCESSING
