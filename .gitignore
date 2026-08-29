@@ -11,3 +11,4 @@ to_rewrite/
 app/bin/
 .claude/
 .serena/
+.worktrees/
