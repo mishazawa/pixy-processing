@@ -72,8 +72,7 @@ GLSL ES 1.00, what three.js compiles to by default, is not):
   under mediump.
 - `u_aa`-bounded `for` loops → fixed `MAX_AA` constant bound with `if (i >= u_aa) break;`
   inside the loop body (a uniform can't be a loop bound under strict ES validation).
-- `u_args[512]` → `u_args[1536]` — `g_arg(n)` can read up to index `511*3+2 = 1535` since
-  `sortArgs` caps `argsBinder` at 511; the array must cover the full addressable range.
+- `u_args[512]` → **`vec3 u_args[128]`** (revised post-implementation — see note below).
 - `g_xor`'s existing bug (the `.y`-branch `else` writes `temp.z = d.z` instead of
   `temp.y = d.y`, leaving `temp.y` undefined on that path) is ported **verbatim** — preserved
   for visual parity with the desktop app, not fixed.
@@ -82,9 +81,24 @@ GLSL ES 1.00, what three.js compiles to by default, is not):
   `shaderCode[length-14]` line-index hack. `DNA.code` stays the full `"vec3 col = …;"`
   statement (not a bare expression) so ported tests' `startsWith("vec3 col =")` assertions
   remain a true parity check. Placement is load-bearing: the placeholder sits inside the
-  inner AA loop, after `iterX`/`iterY` are set for that sample and before
-  `precol[iter] = col;` — moving it out of the loop would silently turn multi-sample AA
-  into a no-op (works fine at `u_aa=1`, quietly wrong above).
+  inner AA loop, after `iterX`/`iterY` are set for that sample and before the sample is
+  accumulated — moving it out of the loop would silently turn multi-sample AA into a no-op
+  (works fine at `u_aa=1`, quietly wrong above).
+
+**Post-implementation note (revised after real-browser testing, not anticipated by this
+spec):** this section's original plan — a flat `float u_args[1536]` plus a `g_arg(int n)`
+helper indexing it, plus a `precol[256]`/`iter` sampling accumulator — did not compile under
+real WebGL1. Direct `gl.compileShader()` against a live context (not just static reading)
+surfaced two GLSL ES 1.00 restrictions this spec missed: (1) uniform arrays don't pack
+scalars across the vec4 boundary, so 1536 float elements cost 1536 full vector slots and
+exceeded a real device's measured 1024-vector budget ("too many uniforms"); (2) array
+indices must be constant expressions or a `for` loop's own control variable — both
+`g_arg`'s parameter-indexed `u_args[n]` and `precol[iter]`'s counter-indexed write violate
+this, independent of the uniform-count issue. Fixed by declaring `vec3 u_args[128]`
+(cutting the pool from 511 to 127 addressable slots — still far above the largest arg count
+observed in testing, 76), having `Gene.get()` emit the index directly (`u_args[3]`) instead
+of calling a helper function, and replacing the `precol[]`/`iter` accumulate-then-sum pattern
+with a running `sum` vec3. See commit `0b6b1ed` on the `refactoring` branch for the full fix.
 
 `vertex.glsl` is simplified to three.js's standard `projectionMatrix` / `modelViewMatrix` /
 `uv` varying, replacing Processing's `transformMatrix`/`texMatrix` dance (not needed
