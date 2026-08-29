@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createPixiStore } from './store';
+import { appTimeClock } from './appTimeClock';
 
 describe('createPixiStore', () => {
   it('starts with a 5x5 population', () => {
@@ -82,5 +83,19 @@ describe('createPixiStore', () => {
     store.getState().randomPop();
     expect(store.getState().lastSel).toBe(-1);
     expect(store.getState().isAnySelected()).toBe(false);
+  });
+
+  it('setAppTime also updates the shared appTimeClock', () => {
+    const store = createPixiStore();
+    store.getState().setAppTime(0.42);
+    expect(appTimeClock.value).toBeCloseTo(0.42);
+  });
+
+  it('stopTime resets both store.appTime and the shared appTimeClock to 0', () => {
+    const store = createPixiStore();
+    store.getState().setAppTime(0.7);
+    store.getState().stopTime();
+    expect(store.getState().appTime).toBe(0);
+    expect(appTimeClock.value).toBe(0);
   });
 });

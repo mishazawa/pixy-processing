@@ -18,8 +18,7 @@ function tileRect(index: number, popRow: number, width: number) {
 }
 
 export function GridView({ width, height }: { width: number; height: number }) {
-  const { members, popRow, focusedId, isFocused, toggleSelect, focus, blurFocus, setView, aa, timeRun, timeFreq } =
-    usePixiStore();
+  const { members, popRow, focusedId, isFocused, toggleSelect, focus, blurFocus, setView, aa } = usePixiStore();
 
   return (
     <div style={{ position: 'relative', width, height }}>
@@ -31,8 +30,6 @@ export function GridView({ width, height }: { width: number; height: number }) {
             rect={tileRect(i, popRow, width)}
             canvasHeightPx={height}
             aa={aa}
-            timeRunning={timeRun}
-            timeFreq={timeFreq}
           />
         ))}
       </Scene>

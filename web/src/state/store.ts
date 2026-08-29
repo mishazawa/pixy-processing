@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { Pop, type PopMember } from '../engine/pop';
+import { appTimeClock } from './appTimeClock';
 
 export type ViewMode = 'GRID' | 'SINGLE';
 
@@ -61,7 +62,7 @@ export function createPixiStore() {
       aa: 1,
       expSize: 1000,
       appTime: 0,
-      timeFreq: 5,
+      timeFreq: 60,
       timeRun: true,
       mutationRate: 100,
 
@@ -126,11 +127,17 @@ export function createPixiStore() {
       focus: (index) => set({ isFocused: true, focusedId: index }),
       blurFocus: () => set({ isFocused: false }),
 
-      setAppTime: (t) => set({ appTime: t }),
+      setAppTime: (t) => {
+        appTimeClock.value = t;
+        set({ appTime: t });
+      },
       setTimeFreq: (f) => set({ timeFreq: f }),
       playTime: () => set({ timeRun: true }),
       pauseTime: () => set({ timeRun: false }),
-      stopTime: () => set({ timeRun: false, appTime: 0 }),
+      stopTime: () => {
+        appTimeClock.value = 0;
+        set({ timeRun: false, appTime: 0 });
+      },
 
       setExpSize: (size) => set({ expSize: size }),
     };

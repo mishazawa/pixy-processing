@@ -1,34 +1,24 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import type { DNA } from '../engine/dna';
 import { ARGS_POOL_SIZE } from '../engine/constants';
 import { buildArtworkMaterial } from './buildMaterial';
 import { computeTileUniforms, type TileRect } from './tileUniforms';
+import { appTimeClock } from '../state/appTimeClock';
 
 export interface ArtworkProps {
   dna: DNA;
   rect: TileRect;
   canvasHeightPx: number;
   aa: number;
-  timeRunning: boolean;
-  timeFreq: number;
-  onAppTime?: (t: number) => void;
 }
 
-export function Artwork({ dna, rect, canvasHeightPx, aa, timeRunning, timeFreq, onAppTime }: ArtworkProps) {
+export function Artwork({ dna, rect, canvasHeightPx, aa }: ArtworkProps) {
   const { gl } = useThree();
   const material = useMemo(() => buildArtworkMaterial(dna.code), [dna.code]);
   useEffect(() => () => material.dispose(), [material]);
 
-  const appTimeRef = useRef(0);
-
   useFrame(() => {
-    if (timeRunning) {
-      appTimeRef.current += 1 / timeFreq / 60;
-      if (appTimeRef.current >= 1) appTimeRef.current = 0;
-      onAppTime?.(appTimeRef.current);
-    }
-
     const pixelRatio = gl.getPixelRatio();
     const u = computeTileUniforms(
       {
@@ -48,7 +38,7 @@ export function Artwork({ dna, rect, canvasHeightPx, aa, timeRunning, timeFreq, 
     material.uniforms.u_aa.value = aa;
 
     const argsArray = material.uniforms.u_args.value as Float32Array;
-    const addTime = Math.sin(appTimeRef.current * 2 * Math.PI);
+    const addTime = Math.sin(appTimeClock.value * 2 * Math.PI);
     const count = Math.min(dna.args.length, ARGS_POOL_SIZE);
     for (let i = 0; i < count; i++) {
       argsArray[i * 3] = dna.args[i].x + addTime;

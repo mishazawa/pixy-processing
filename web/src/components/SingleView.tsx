@@ -10,7 +10,7 @@ import { TimeControls, GenControls, MainControls } from './ControlPanels';
 // clamp are preserved (that clamp already exists to bound periodic genes
 // from aliasing at extreme zoom — see app/CLAUDE.md's rendering notes).
 export function SingleView({ width, height }: { width: number; height: number }) {
-  const { members, focusedId, setView, aa, timeRun, timeFreq } = usePixiStore();
+  const { members, focusedId, setView, aa } = usePixiStore();
   const dna = members[focusedId]?.dna;
   const dragging = useRef(false);
   const lastPointer = useRef({ x: 0, y: 0 });
@@ -73,8 +73,6 @@ export function SingleView({ width, height }: { width: number; height: number })
             rect={{ x: 0, y: 0, w: side, h: side }}
             canvasHeightPx={side}
             aa={aa}
-            timeRunning={timeRun}
-            timeFreq={timeFreq}
           />
         </Scene>
       </div>
