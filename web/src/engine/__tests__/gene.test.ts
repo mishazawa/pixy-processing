@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Gene } from '../gene';
 import { DNA } from '../dna';
+import { ARGS_CAP } from '../constants';
 
 function emptyDna(): DNA {
   const dna = new DNA();
@@ -38,12 +39,12 @@ describe('Gene node counts', () => {
 });
 
 describe('rndm value genes', () => {
-  it('bind an arg slot and render as g_arg(n)', () => {
+  it('bind an arg slot and render as a direct u_args index', () => {
     const dna = emptyDna();
     const g = new Gene(dna, 'rndm');
     expect(g.argsBinder).toBe(0);
     expect(dna.args.length).toBe(1);
-    expect(g.get()).toBe('g_arg(0)');
+    expect(g.get()).toBe('u_args[0]');
   });
 
   it('rndm3 also binds a single arg slot', () => {
@@ -55,10 +56,10 @@ describe('rndm value genes', () => {
 
   it('caps argsBinder at ARGS_CAP once the pool is full', () => {
     const dna = emptyDna();
-    for (let i = 0; i < 511; i++) dna.args.push({ x: 0, y: 0, z: 0 });
+    for (let i = 0; i < ARGS_CAP; i++) dna.args.push({ x: 0, y: 0, z: 0 });
     const g = new Gene(dna, 'rndm');
-    expect(g.argsBinder).toBe(511);
-    expect(dna.args.length).toBe(511);
+    expect(g.argsBinder).toBe(ARGS_CAP);
+    expect(dna.args.length).toBe(ARGS_CAP);
   });
 });
 

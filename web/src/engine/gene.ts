@@ -83,7 +83,15 @@ export class Gene {
 
   get(): string {
     if (this.type === 'rndm' || this.type === 'rndm3') {
-      return `g_arg(${this.argsBinder})`;
+      // Emits a direct constant-index expression rather than calling a
+      // g_arg(n) helper: GLSL ES 1.00 (WebGL1) only allows array indices to
+      // be constant expressions or a for-loop's own control variable, and
+      // that check is per-function, not interprocedural -- a helper
+      // function indexing u_args with its own parameter fails to compile
+      // even though every call site here passes a literal. Since
+      // argsBinder is already known at codegen time, indexing directly
+      // keeps the index a true literal constant in the final GLSL source.
+      return `u_args[${this.argsBinder}]`;
     }
     let temp = `g_${this.type}(`;
     if (this.nodes > 0) {

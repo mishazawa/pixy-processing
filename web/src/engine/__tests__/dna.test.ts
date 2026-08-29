@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { DNA } from '../dna';
 import type { Gene } from '../gene';
+import { ARGS_POOL_SIZE } from '../constants';
 
 describe('DNA.random', () => {
   it('produces constructed code starting with "vec3 col ="', () => {
@@ -71,7 +72,7 @@ describe('DNA.mutate', () => {
   it('never leaves more than ARGS_CAP+1 args after sortArgs', () => {
     const dna = DNA.random();
     dna.mutate(100);
-    expect(dna.args.length).toBeLessThanOrEqual(512);
+    expect(dna.args.length).toBeLessThanOrEqual(ARGS_POOL_SIZE);
   });
 });
 

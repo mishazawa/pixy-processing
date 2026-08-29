@@ -6,17 +6,49 @@
 //   - bare int literals in float-typed expressions -> explicit floats
 //   - u_aa-bounded for-loops -> MAX_AA-bounded with `if (i >= u_aa) break;`
 //     (a uniform can't be a loop bound under strict ES validation)
-//   - u_args[512] -> u_args[1536] (matches ARGS_POOL_SIZE * 3 in
-//     engine/constants.ts, covering the full addressable range up to
-//     ARGS_CAP=511 slots)
 //   - `col / (u_aa * u_aa)` -> `col / float(u_aa * u_aa)` (no vec3/int op)
+//   - u_args declared as `vec3[ARGS_POOL_SIZE]`, not a flat `float[]`: GLSL
+//     ES/ANGLE uniform arrays don't pack scalars across the vec4 boundary --
+//     each array element (even a single float) costs one full vector slot
+//     in MAX_FRAGMENT_UNIFORM_VECTORS accounting. A flat `float
+//     u_args[ARGS_POOL_SIZE*3]` therefore cost 3x the vector slots of the
+//     equivalent `vec3 u_args[ARGS_POOL_SIZE]` for the same data, and
+//     empirically exceeded real hardware's budget (measured 1024 vectors on
+//     an Apple M1 via ANGLE Metal -- "ERROR: too many uniforms" with 1536
+//     float elements alone). three.js's WebGLUniforms.flatten() passes a
+//     flat Float32Array straight to gl.uniform3fv() unchanged when it's
+//     already flat, so render/buildMaterial.ts's Float32Array(ARGS_POOL_SIZE
+//     * 3) and render/Artwork.tsx's flat x/y/z writes need no changes for
+//     this -- only the GLSL type changes.
+//   - No dynamic array indexing anywhere: GLSL ES 1.00 (WebGL1) only allows
+//     an array index to be a constant expression or a for-loop's own control
+//     variable ("Index expression can only contain const or loop symbols" --
+//     confirmed by direct gl.compileShader() against a real WebGL1 context,
+//     not just static reading). Two places violated this:
+//       - the original `g_arg(int n) { return ...u_args[n]...; }` indexed a
+//         uniform array with a function PARAMETER -- illegal even though
+//         every actual call site passes a compile-time-constant literal
+//         (Gene.get() emits e.g. `g_arg(3)`), because GLSL ES 1.00's
+//         constant-index check is syntactic per-function, not
+//         interprocedural. Fixed by having Gene.get() emit the indexing
+//         expression directly (`u_args[3]`) instead of a function call --
+//         the literal index is then always a true constant expression in
+//         the final source, and the g_arg() function is removed entirely.
+//       - `precol[iter] = col;` in main() indexed a plain array with `iter`,
+//         a counter shared across two nested for-loops -- not itself either
+//         loop's own control variable, so it doesn't qualify as a "loop
+//         symbol" either. Fixed by removing the `precol[256]` array and
+//         `iter` entirely: instead of storing each AA sample then summing
+//         them in a second pass, accumulate directly into a running `sum`
+//         vec3 inside the sampling loop (mathematically identical -- sum of
+//         all samples / count -- and removes the array altogether).
 // g_xor's existing bug (the .y branch's `else` writes temp.z instead of
 // temp.y, leaving temp.y undefined on that path) is preserved verbatim.
 //
 // __DNA_CODE__ is replaced with the DNA's full "vec3 col = <expr>;"
 // statement at material-build time (see render/buildMaterial.ts). Its
 // position is load-bearing: it must stay inside the inner AA-sampling loop,
-// after iterX/iterY are set for that sample and before `precol[iter] = col;`
+// after iterX/iterY are set for that sample and before `sum += col;`
 // -- moving it out of the loop would silently turn multi-sample AA into a
 // no-op (looks fine at u_aa=1, quietly wrong above).
 export const FRAGMENT_SHADER_TEMPLATE = `
@@ -31,9 +63,8 @@ uniform float u_g_scale;
 uniform vec2 u_off;
 uniform float u_scale;
 uniform float u_hoff;
-uniform float u_args[1536];
+uniform vec3 u_args[128];
 
-vec3 precol[256];
 uniform int u_aa;
 int iterX = 0;
 int iterY = 0;
@@ -54,10 +85,6 @@ vec3 g_y() {
 	float temp = off + (gl_FragCoord.y) * scale;
 	temp = temp + (float(iterY)/float(u_aa)) * scale;
 	return vec3(temp,temp,temp);
-}
-
-vec3 g_arg(int n) {
-	return vec3(u_args[n*3], u_args[n*3+1], u_args[n*3+2]);
 }
 
 // BASIC MATH
@@ -499,8 +526,8 @@ vec3 process(vec3 c) {
 }
 
 void main() {
-	int iter = 0;
 	vec3 col;
+	vec3 sum = vec3(0.0, 0.0, 0.0);
 	for (int y_ = 0; y_ < MAX_AA; y_++) {
 		if (y_ >= u_aa) break;
 		iterY = y_;
@@ -508,17 +535,10 @@ void main() {
 			if (x_ >= u_aa) break;
 			iterX = x_;
 			__DNA_CODE__
-			precol[iter] = col;
-
-			iter ++;
+			sum += col;
 		}
 	}
-	col = vec3(0.0,0.0,0.0);
-	for (int i = 0; i < MAX_AA*MAX_AA; i++) {
-		if (i >= u_aa*u_aa) break;
-		col = col + precol[i];
-	}
-	col = col / float(u_aa * u_aa);
+	col = sum / float(u_aa * u_aa);
 	col = process(col);
 	gl_FragColor = vec4(col,1.0);
 }
