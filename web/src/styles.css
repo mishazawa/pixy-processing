@@ -8,3 +8,19 @@ body {
   color: #d4d4d4;
   font-family: monospace;
 }
+
+#root {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+button {
+  font-family: monospace;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
